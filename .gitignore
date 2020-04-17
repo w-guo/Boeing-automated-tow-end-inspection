@@ -1,2 +1,4 @@
-
-src/.DS_Store
+.gitattributes
+.DS_Store
+Icon?
+*.pyc
