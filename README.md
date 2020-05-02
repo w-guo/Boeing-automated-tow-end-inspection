@@ -1,2 +1,3 @@
-# AFP-ML
- Improved tow-end detection for fiber placement inspection using machine learning
+# Automated Tow End Inspection
+
+This repository contains the code for the Boeing project [Deep learning for automated in-process inspection of composite layup](https://depts.washington.edu/barc/projects/data-science-manufacturing). The goal of this project is to improve the accuracy of tow end identification to reduce as much of the time-consuming manual inspections as possible. More details can be found on the [project website](http://wguo.rbind.io/project/boeing-afp/).
