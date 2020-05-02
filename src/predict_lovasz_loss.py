@@ -1,29 +1,31 @@
+import fnmatch
+import cv2
+import os
+from utils import rotate_mirror_do, rotate_mirror_undo, windowed_subdivs, recreate_from_subdivs
+from normalized_optimizer_wrapper import NormalizedOptimizer
+from losses import bce_dice_loss, lovasz_loss, symmetric_lovasz_loss, iou, iou_lovasz
+from keras.layers import Input, concatenate, Conv2D, Conv2DTranspose, MaxPooling2D, BatchNormalization, UpSampling2D, Dropout, Lambda, Activation, Add
+from keras import backend as K
+from keras.models import load_model
+import tensorflow as tf
+from tqdm import tqdm
+import numpy as np
 import sys
 sys.path.insert(0, 'C:\\Users\\BARC\\Desktop\\AFP\\binary_seg')
 
-import os, cv2, fnmatch
-import numpy as np
-from tqdm import tqdm
-import tensorflow as tf
-from keras.models import load_model
-from keras import backend as K
-K.set_image_data_format('channels_last') 
-from keras.layers import Input, concatenate, Conv2D, Conv2DTranspose, MaxPooling2D, BatchNormalization, UpSampling2D, Dropout, Lambda, Activation, Add
-from losses import bce_dice_loss, lovasz_loss, symmetric_lovasz_loss, iou, iou_lovasz
+K.set_image_data_format('channels_last')
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-from normalized_optimizer_wrapper import NormalizedOptimizer
-from utils import rotate_mirror_do, rotate_mirror_undo, windowed_subdivs, recreate_from_subdivs
 
 test_src_files = fnmatch.filter(os.listdir('./test/src/'), '*.jpg')
-model = load_model('weights/unet_xception_resnet_nsgd32_lovasz_best.h5',custom_objects={'lovasz_loss': lovasz_loss, 'iou_lovasz': iou_lovasz})
-#model = load_model('weights/unet_xception_resnet_nsgd32_sym_lovasz_best.h5',custom_objects={'symmetric_lovasz_loss': symmetric_lovasz_loss, 'iou_lovasz': iou_lovasz})
+model = load_model('weights/unet_xception_resnet_nsgd32_lovasz_best.h5',
+                   custom_objects={'lovasz_loss': lovasz_loss, 'iou_lovasz': iou_lovasz})
 
 train_mean, train_std = np.load('train_mean_std.npy')
-    
-img_w, img_h = (256, 256) 
+
+img_w, img_h = (256, 256)
 h, w = (728, 968)
-overlap_pct = 0 
+overlap_pct = 0
 window_size = 256
 n_w = (w-img_w*overlap_pct)//(img_w*(1-overlap_pct))+1
 n_h = (h-img_h*overlap_pct)//(img_h*(1-overlap_pct))+1
@@ -41,15 +43,16 @@ for filename in test_src_files:
     pads = rotate_mirror_do(pad)
     res = []
     for pad in tqdm(pads):
-        # For every rotation:
-        sd = windowed_subdivs(model, 3, train_mean, train_std, pad, window_size, overlap_pct)
-        one_padded_result = recreate_from_subdivs(sd, window_size, overlap_pct, padded_out_shape=list(pad.shape))
+        # for every rotation:
+        sd = windowed_subdivs(model, 3, train_mean,
+                              train_std, pad, window_size, overlap_pct)
+        one_padded_result = recreate_from_subdivs(
+            sd, window_size, overlap_pct, padded_out_shape=list(pad.shape))
         res.append(one_padded_result)
-    # Merge after rotations:
+    # merge after rotations:
     padded_results = rotate_mirror_undo(res)
-    #convert the output of a model with lovasz loss as the metric to probability
+    # convert the output of a model with lovasz loss as the metric to probability
     prob = np.exp(padded_results)/(1+np.exp(padded_results))
     prd = prob[aug_h:aug_h+h, aug_w:aug_w+w]
-    cv2.imwrite('./test/predict/'+ os.path.splitext(filename)[0]+'.png', np.rint(prd*255))  
-    
-    
+    cv2.imwrite('./test/predict/' + os.path.splitext(filename)
+                [0]+'.png', np.rint(prd*255))

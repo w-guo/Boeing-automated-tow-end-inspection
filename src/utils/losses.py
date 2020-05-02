@@ -22,83 +22,102 @@ def bce_dice_loss(y_true, y_pred, bce=0.5, dice=0.5):
     return binary_crossentropy(y_true, y_pred) * bce + dice_loss(y_true, y_pred) * dice
 
 # return bce_dice_loss when max pixel = 1 (i.e.the image is non-empty) and 0 when the image is empty
-# y_true format: (batch, h, w, channel)    
+# y_true format: (batch, h, w, channel)
+
+
 def bce_dice_loss_non_empty(y_true, y_pred):
     return K.max(K.max(y_true, axis=1), axis=1) * bce_dice_loss(y_true, y_pred, bce=0.5, dice=0.5)
 
 # This is the iou metric used by Kaggle competition: https://www.kaggle.com/c/tgs-salt-identification-challenge
-# It "grades" the real iou. With this metric, if real iou <0.5 (usually, iou >= 0.5 is considered good), it got grade 0. 
+# It "grades" the real iou. With this metric, if real iou <0.5 (usually, iou >= 0.5 is considered good), it got grade 0.
 # Likewise, if 0.5< real iou < 0.54, iou grade = 0.1; ... if real iou > 0.95, iou grade = 1
 # https://www.kaggle.com/cpmpml/fast-iou-metric-in-numpy-and-tensorflow
+
+
 def get_iou_vector(A, B):
-    # Numpy version    
+    # Numpy version
     batch_size = A.shape[0]
     metric = 0.0
     for batch in range(batch_size):
         t, p = A[batch], B[batch]
         true = np.sum(t)
         pred = np.sum(p)
-        
+
         # deal with empty mask first
         if true == 0:
             metric += (pred == 0)
             continue
-        
-        # non empty mask case.  Union is never empty 
+
+        # non empty mask case.  Union is never empty
         # hence it is safe to divide by its number of pixels
         intersection = np.sum(t * p)
         union = true + pred - intersection
-        iou = intersection / union # real iou
-        
+        iou = intersection / union  # real iou
+
         # iou metrric is a stepwise approximation of the real iou over 0.5
         iou = np.floor(max(0, (iou - 0.45)*20)) / 10
-        
+
         metric += iou
-        
+
     # teake the average over all images in batch
     metric /= batch_size
     return metric
 
+
 def iou(label, pred):
-    return tf.py_func(get_iou_vector, [label, pred>0.5], tf.float64)
+    return tf.py_func(get_iou_vector, [label, pred > 0.5], tf.float64)
 
 # lovasz_loss need input range (-∞，+∞), so the default threshod for pixel prediction is 0 instead of 0.5
+
+
 def iou_lovasz(label, pred):
-    return tf.py_func(get_iou_vector, [label, pred>0], tf.float64)
-    
+    return tf.py_func(get_iou_vector, [label, pred > 0], tf.float64)
+
 # """
 # Focal Loss for Dense Object Detection
 # Tsung-Yi Lin et. al
 # """
-# Focal Loss is unstable, fine-tuning is definitely needed 
-def focal_loss(gamma = 2., alpha = 0.75):
+# Focal Loss is unstable, fine-tuning is definitely needed
+
+
+def focal_loss(gamma=2., alpha=0.75):
     def focal_loss_fixed(y_true, y_pred):
         y_pred = K.clip(y_pred, 1e-6, 1 - 1e-6)
         p_t = tf.where(tf.equal(y_true, 1), y_pred, 1. - y_pred)
-        alpha_t = tf.where(tf.equal(y_true, 1), K.ones_like(y_pred) * K.constant(alpha), K.ones_like(y_pred) * K.constant(1. - alpha))
+        alpha_t = tf.where(tf.equal(y_true, 1), K.ones_like(
+            y_pred) * K.constant(alpha), K.ones_like(y_pred) * K.constant(1. - alpha))
         loss = K.mean(-1. * alpha_t * (1. - p_t)**gamma * K.log(p_t))
         return loss
     return focal_loss_fixed
- 
+
 # """
 # Lovasz-Softmax and Jaccard hinge loss in Tensorflow
 # Maxim Berman 2018 ESAT-PSI KU Leuven (MIT License)
 # """
 # code download from: https://github.com/bermanmaxim/LovaszSoftmax
+
+
 def lovasz_loss(y_true, y_pred):
-    y_true, y_pred = K.cast(K.squeeze(y_true, -1), 'int32'), K.cast(K.squeeze(y_pred, -1), 'float32')
-    #logits = K.log(y_pred / (1. - y_pred)) # the original code
-    logits = y_pred # https://www.kaggle.com/shaojiaxin/u-net-with-simple-resnet-blocks-v2-new-loss
+    y_true, y_pred = K.cast(K.squeeze(y_true, -1),
+                            'int32'), K.cast(K.squeeze(y_pred, -1), 'float32')
+    # logits = K.log(y_pred / (1. - y_pred)) # the original code
+    # https://www.kaggle.com/shaojiaxin/u-net-with-simple-resnet-blocks-v2-new-loss
+    logits = y_pred
     loss = lovasz_hinge(logits, y_true, per_image=True, ignore=None)
     return loss
 
 # https://www.kaggle.com/c/tgs-salt-identification-challenge/discussion/69053#406866
+
+
 def symmetric_lovasz_loss(y_true, y_pred):
-    y_true, y_pred = K.cast(K.squeeze(y_true, -1), 'int32'), K.cast(K.squeeze(y_pred, -1), 'float32')
-    #logits = K.log(y_pred / (1. - y_pred)) 
-    logits = y_pred 
-    loss = (lovasz_hinge(logits, y_true) + lovasz_hinge(-logits, 1 - y_true)) / 2
+    y_true, y_pred = K.cast(K.squeeze(y_true, -1),
+                            'int32'), K.cast(K.squeeze(y_pred, -1), 'float32')
+    #logits = K.log(y_pred / (1. - y_pred))
+    logits = y_pred
+    loss = (lovasz_hinge(logits, y_true) +
+            lovasz_hinge(-logits, 1 - y_true)) / 2
     return loss
+
 
 def lovasz_grad(gt_sorted):
     """
@@ -113,6 +132,7 @@ def lovasz_grad(gt_sorted):
     return jaccard
 
 # --------------------------- BINARY LOSSES ---------------------------
+
 
 def lovasz_hinge(logits, labels, per_image=True, ignore=None):
     """
@@ -136,7 +156,8 @@ def lovasz_hinge(logits, labels, per_image=True, ignore=None):
 
         loss = tf.reduce_mean(losses)
     else:
-        loss = lovasz_hinge_flat(*flatten_binary_scores(logits, labels, ignore))
+        loss = lovasz_hinge_flat(
+            *flatten_binary_scores(logits, labels, ignore))
     return loss
 
 
@@ -152,12 +173,14 @@ def lovasz_hinge_flat(logits, labels):
         labelsf = tf.cast(labels, logits.dtype)
         signs = 2. * labelsf - 1.
         errors = 1. - logits * tf.stop_gradient(signs)
-        errors_sorted, perm = tf.nn.top_k(errors, k=tf.shape(errors)[0], name="descending_sort")
+        errors_sorted, perm = tf.nn.top_k(errors, k=tf.shape(errors)[
+                                          0], name="descending_sort")
         gt_sorted = tf.gather(labelsf, perm)
         grad = lovasz_grad(gt_sorted)
         # loss = tf.tensordot(tf.nn.relu(errors_sorted), tf.stop_gradient(grad), 1, name="loss_non_void")
         # ELU + 1
-        loss = tf.tensordot(tf.nn.elu(errors_sorted) + 1., tf.stop_gradient(grad), 1, name="loss_non_void")
+        loss = tf.tensordot(tf.nn.elu(errors_sorted) + 1.,
+                            tf.stop_gradient(grad), 1, name="loss_non_void")
         return loss
 
     # deal with the void prediction case (only void pixels)
@@ -183,5 +206,4 @@ def flatten_binary_scores(scores, labels, ignore=None):
     vscores = tf.boolean_mask(scores, valid, name='valid_scores')
     vlabels = tf.boolean_mask(labels, valid, name='valid_labels')
     return vscores, vlabels
-
 

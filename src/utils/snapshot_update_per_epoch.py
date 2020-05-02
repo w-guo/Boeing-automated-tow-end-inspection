@@ -5,6 +5,7 @@ import keras.callbacks as callbacks
 from keras.callbacks import Callback
 from keras import backend as K
 
+
 class SnapshotModelCheckpoint(Callback):
     """Callback that saves the snapshot weights of the model.
     Saves the model weights on certain epochs (which can be considered the
@@ -63,15 +64,17 @@ class SnapshotCallbackBuilder:
             os.makedirs('weights/')
 
         callback_list = [callbacks.ModelCheckpoint("weights/%s_best.h5" % model_prefix, monitor="val_loss", mode='min',
-                                                    save_best_only=True),
+                                                   save_best_only=True),
                          SWA("weights/%s_swa.h5" % model_prefix, self.T-5),
-                         callbacks.LearningRateScheduler(schedule=self._cosine_anneal_schedule),
+                         callbacks.LearningRateScheduler(
+                             schedule=self._cosine_anneal_schedule),
                          SnapshotModelCheckpoint(self.T, self.M, fn_prefix='weights/%s' % model_prefix)]
 
         return callback_list
 
     def _cosine_anneal_schedule(self, t):
-        cos_inner = np.pi * (t % (self.T // self.M))  # t - 1 is used when t has 1-based indexing.
+        # t - 1 is used when t has 1-based indexing.
+        cos_inner = np.pi * (t % (self.T // self.M))
         cos_inner /= self.T // self.M
         cos_out = np.cos(cos_inner) + 1
         return float(self.alpha_zero / 2 * cos_out)

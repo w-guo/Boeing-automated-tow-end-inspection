@@ -5,20 +5,23 @@ from keras.utils.generic_utils import get_custom_objects
 
 # https://github.com/titu1994/keras-normalized-optimizers
 # Computes the L-2 norm of the gradient.
+
+
 def l2_norm(grad):
     norm = K.sqrt(K.sum(K.square(grad))) + K.epsilon()
     return norm
 
+
 class OptimizerWrapper(optimizers.Optimizer):
 
-    def __init__(self, optimizer):     
-        
+    def __init__(self, optimizer):
+
         self.optimizer = optimizers.get(optimizer)
 
         # patch the `get_gradients` call
         self._optimizer_get_gradients = self.optimizer.get_gradients
 
-    def get_gradients(self, loss, params):      
+    def get_gradients(self, loss, params):
         grads = self._optimizer_get_gradients(loss, params)
         return grads
 
@@ -35,16 +38,16 @@ class OptimizerWrapper(optimizers.Optimizer):
 
         return self.updates
 
-    def set_weights(self, weights):       
+    def set_weights(self, weights):
         self.optimizer.set_weights(weights)
 
-    def get_weights(self):        
+    def get_weights(self):
         return self.optimizer.get_weights()
 
-    def get_config(self):       
+    def get_config(self):
         # properties of NormalizedOptimizer
         config = {'optimizer_name': self.optimizer.__class__.__name__.lower()}
-        
+
         # optimizer config
         optimizer_config = {'optimizer_config': self.optimizer.get_config()}
         return dict(list(optimizer_config.items()) + list(config.items()))
@@ -67,38 +70,39 @@ class OptimizerWrapper(optimizers.Optimizer):
         _NORMS[name] = func
 
     @classmethod
-    def get_normalization_functions(cls):        
+    def get_normalization_functions(cls):
         global _NORMS
         return sorted(list(_NORMS.keys()))
-    
+
+
 class NormalizedOptimizer(OptimizerWrapper):
 
-    def __init__(self, optimizer, normalization='l2'):       
+    def __init__(self, optimizer, normalization='l2'):
         super(NormalizedOptimizer, self).__init__(optimizer)
 
         if normalization not in _NORMS:
-            raise ValueError('`normalization` must be one of %s.\n' 
+            raise ValueError('`normalization` must be one of %s.\n'
                              'Provided was "%s".' % (str(sorted(list(_NORMS.keys()))), normalization))
 
         self.normalization = normalization
         self.normalization_fn = _NORMS[normalization]
         self.lr = K.variable(1e-3, name='lr')
 
-    def get_gradients(self, loss, params):       
+    def get_gradients(self, loss, params):
         grads = super(NormalizedOptimizer, self).get_gradients(loss, params)
         grads = [grad / self.normalization_fn(grad) for grad in grads]
         return grads
 
-    def get_config(self):        
+    def get_config(self):
         # properties of NormalizedOptimizer
         config = {'normalization': self.normalization}
 
         # optimizer config
         base_config = super(NormalizedOptimizer, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
-    
+
     @classmethod
-    def from_config(cls, config):       
+    def from_config(cls, config):
         optimizer_config = {'class_name': config['optimizer_name'],
                             'config': config['optimizer_config']}
 
