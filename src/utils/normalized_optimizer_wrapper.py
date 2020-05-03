@@ -4,10 +4,16 @@ from keras.legacy import interfaces
 from keras.utils.generic_utils import get_custom_objects
 
 # https://github.com/titu1994/keras-normalized-optimizers
-# Computes the L-2 norm of the gradient.
 
 
 def l2_norm(grad):
+    """
+    Computes the L-2 norm of the gradient.
+    # Arguments:
+        grad: gradient for a variable
+    # Returns:
+        The norm of the gradient
+    """
     norm = K.sqrt(K.sum(K.square(grad))) + K.epsilon()
     return norm
 

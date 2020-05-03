@@ -42,14 +42,14 @@ def rotate_mirror_do(im):
     """
     mirrs = []
     mirrs.append(np.array(im))
-#    mirrs.append(np.rot90(np.array(im), 1))
-#    mirrs.append(np.rot90(np.array(im), 2))
-#    mirrs.append(np.rot90(np.array(im), 3))
+    mirrs.append(np.rot90(np.array(im), 1))
+    mirrs.append(np.rot90(np.array(im), 2))
+    mirrs.append(np.rot90(np.array(im), 3))
     im = np.fliplr(im)
     mirrs.append(np.array(im))
-#    mirrs.append(np.rot90(np.array(im), 1))
-#    mirrs.append(np.rot90(np.array(im), 2))
-#    mirrs.append(np.rot90(np.array(im), 3))
+    mirrs.append(np.rot90(np.array(im), 1))
+    mirrs.append(np.rot90(np.array(im), 2))
+    mirrs.append(np.rot90(np.array(im), 3))
 
     return mirrs
 
@@ -65,14 +65,14 @@ def rotate_mirror_undo(im_mirrs):
     """
     origs = []
     origs.append(np.array(im_mirrs[0]))
-#    origs.append(np.rot90(np.array(im_mirrs[1]), 3))
-#    origs.append(np.rot90(np.array(im_mirrs[2]), 2))
-#    origs.append(np.rot90(np.array(im_mirrs[3]), 1))
-#
+    origs.append(np.rot90(np.array(im_mirrs[1]), 3))
+    origs.append(np.rot90(np.array(im_mirrs[2]), 2))
+    origs.append(np.rot90(np.array(im_mirrs[3]), 1))
+
     origs.append(np.fliplr(np.array(im_mirrs[4])))
-#    origs.append(np.fliplr(np.rot90(np.array(im_mirrs[5]), 3)))
-#    origs.append(np.fliplr(np.rot90(np.array(im_mirrs[6]), 2)))
-#    origs.append(np.fliplr(np.rot90(np.array(im_mirrs[7]), 1)))
+    origs.append(np.fliplr(np.rot90(np.array(im_mirrs[5]), 3)))
+    origs.append(np.fliplr(np.rot90(np.array(im_mirrs[6]), 2)))
+    origs.append(np.fliplr(np.rot90(np.array(im_mirrs[7]), 1)))
 
     return np.mean(origs, axis=0)
 
@@ -166,27 +166,6 @@ def recreate_from_subdivs(subdivs, window_size, overlap_pct, padded_out_shape):
     return y
 
 
-def largest_component_mask(bin_img):
-    """Finds the largest component in a binary image and returns the component as a mask."""
-
-    contours = cv2.findContours(
-        bin_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[1]
-    # should be [0] if OpenCV 2+
-
-    max_area = 0
-    max_contour_index = 0
-    for i, contour in enumerate(contours):
-        contour_area = cv2.moments(contour)['m00']
-        if contour_area > max_area:
-            max_area = contour_area
-            max_contour_index = i
-
-    labeled_img = np.zeros(bin_img.shape, dtype=np.uint8)
-    cv2.drawContours(labeled_img, contours, max_contour_index,
-                     color=255, thickness=-1)
-
-    return labeled_img
-
 # --------------------------- Process line segments ---------------------------
 
 
@@ -209,7 +188,6 @@ def lineMagnitude(line):
 
 def perp_distance(a_line, b_line):
     'Perpendicular distance between two parallel line segments'
-    #assert (abs(get_orientation(a_line)- get_orientation(b_line)) < 10)
     px, py = a_line[:2]
     x1, y1, x2, y2 = b_line
 
@@ -241,8 +219,6 @@ def find_major_orientations(lines):
     orit = []
     l_mag = []
     for l in lines:
-        #x1, y1, x2, y2 = np.array(l).flatten()
-        #line_mag = lineMagnitude(x1, y1, x2, y2)
         line_mag = lineMagnitude(l)
         orientation = get_orientation(l)
         l_mag.append(line_mag)

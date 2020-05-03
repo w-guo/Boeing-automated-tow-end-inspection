@@ -76,20 +76,19 @@ def generateData(batch_size, data=[]):
                 batch = 0
 
 
+# load the saved model from the 1st stage training
 model = load_model('weights/unet_xception_resnet_nsgd32_best.h5',
                    custom_objects={'bce_dice_loss': bce_dice_loss, 'iou': iou})
-#model = load_model('weights/unet_xception_resnet_nsgd32_lovasz_best.h5',custom_objects={'lovasz_loss': lovasz_loss, 'iou_lovasz': iou_lovasz})
 
 input_x = model.layers[0].input
-# remove layter activation layer and use losvasz loss
-#output_layer = model.layers[-1].input
+# remove layter activation layer and use Losvasz loss
 output_layer = model.layers[-1].output
 model = Model(input_x, output_layer)
 
 model_prefix = 'unet_xception_resnet_nsgd32_lovasz'
 sgd = SGD(init_lr, momentum=0.9, nesterov=True, accum_iters=accum_it)
 sgd = NormalizedOptimizer(sgd, normalization='l2')
-# lovasz_loss need input range (-∞，+∞), so cancel the last "sigmoid" activation
+# Lovasz_loss need input range (-∞，+∞), so cancel the last "sigmoid" activation
 # Then the default threshod for pixel prediction is 0 instead of 0.5
 model.compile(loss=lovasz_loss, optimizer=sgd, metrics=[iou_lovasz])
 model.summary()
@@ -102,7 +101,6 @@ n_epochs = 40
 n_cycles = 1
 BS = 8
 snapshot = SnapshotCallbackBuilder(n_epochs, n_cycles, init_lr)
-#snapshot = SnapshotCallbackBuilder(n_epochs, n_cycles, init_lr, steps_per_epoch=train_numb//(BS*accum_it))
 H = model.fit_generator(generator=generateData(BS, train_set), steps_per_epoch=train_numb//(BS*accum_it)*accum_it, epochs=n_epochs, verbose=1,
                         validation_data=generateData(BS, val_set), validation_steps=valid_numb//(BS*accum_it)*accum_it, callbacks=snapshot.get_callbacks(model_prefix=model_prefix))
 

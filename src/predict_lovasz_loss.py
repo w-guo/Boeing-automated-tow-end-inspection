@@ -18,6 +18,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 test_src_files = fnmatch.filter(os.listdir('./test/src/'), '*.jpg')
+# load the saved model from the 2nd stage training
 model = load_model('weights/unet_xception_resnet_nsgd32_lovasz_best.h5',
                    custom_objects={'lovasz_loss': lovasz_loss, 'iou_lovasz': iou_lovasz})
 
