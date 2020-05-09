@@ -19,7 +19,6 @@ def l2_norm(grad):
 
 
 class OptimizerWrapper(optimizers.Optimizer):
-
     def __init__(self, optimizer):
 
         self.optimizer = optimizers.get(optimizer)
@@ -82,13 +81,13 @@ class OptimizerWrapper(optimizers.Optimizer):
 
 
 class NormalizedOptimizer(OptimizerWrapper):
-
     def __init__(self, optimizer, normalization='l2'):
         super(NormalizedOptimizer, self).__init__(optimizer)
 
         if normalization not in _NORMS:
             raise ValueError('`normalization` must be one of %s.\n'
-                             'Provided was "%s".' % (str(sorted(list(_NORMS.keys()))), normalization))
+                             'Provided was "%s".' %
+                             (str(sorted(list(_NORMS.keys()))), normalization))
 
         self.normalization = normalization
         self.normalization_fn = _NORMS[normalization]
@@ -109,8 +108,10 @@ class NormalizedOptimizer(OptimizerWrapper):
 
     @classmethod
     def from_config(cls, config):
-        optimizer_config = {'class_name': config['optimizer_name'],
-                            'config': config['optimizer_config']}
+        optimizer_config = {
+            'class_name': config['optimizer_name'],
+            'config': config['optimizer_config']
+        }
 
         optimizer = optimizers.get(optimizer_config)
         normalization = config['normalization']

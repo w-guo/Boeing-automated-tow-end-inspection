@@ -3,6 +3,7 @@ import gc
 import numpy as np
 from pre_processing import pre_process
 
+
 def rotate_mirror_do(im):
     """
     Duplicate an np array (image) of shape (x, y, nb_channels) 8 times, in order
@@ -49,7 +50,8 @@ def rotate_mirror_undo(im_mirrs):
     return np.mean(origs, axis=0)
 
 
-def windowed_subdivs(model, input_ch, train_mean, train_std, padded_img, window_size, overlap_pct):
+def windowed_subdivs(model, input_ch, train_mean, train_std, padded_img,
+                     window_size, overlap_pct):
     """
     Create tiled overlapping patches.
 
@@ -66,25 +68,25 @@ def windowed_subdivs(model, input_ch, train_mean, train_std, padded_img, window_
         patches_resolution_along_X == patches_resolution_along_Y == window_size
     """
 
-    step = int(window_size*(1-overlap_pct))
+    step = int(window_size * (1 - overlap_pct))
     padx_len = padded_img.shape[0]
     pady_len = padded_img.shape[1]
     subdivs = []
 
     if input_ch == 3:
-        for i in range(0, padx_len-window_size+1, step):
+        for i in range(0, padx_len - window_size + 1, step):
             subdivs.append([])
-            for j in range(0, pady_len-window_size+1, step):
-                patch = padded_img[i:i+window_size, j:j+window_size]
-                patch = pre_process(patch, train_mean, train_std)/255
+            for j in range(0, pady_len - window_size + 1, step):
+                patch = padded_img[i:i + window_size, j:j + window_size]
+                patch = pre_process(patch, train_mean, train_std) / 255
                 patch = cv2.merge((patch, patch, patch))
                 subdivs[-1].append(patch)
     else:
-        for i in range(0, padx_len-window_size+1, step):
+        for i in range(0, padx_len - window_size + 1, step):
             subdivs.append([])
-            for j in range(0, pady_len-window_size+1, step):
-                patch = padded_img[i:i+window_size, j:j+window_size]
-                patch = pre_process(patch, train_mean, train_std)/255
+            for j in range(0, pady_len - window_size + 1, step):
+                patch = padded_img[i:i + window_size, j:j + window_size]
+                patch = pre_process(patch, train_mean, train_std) / 255
                 patch = np.expand_dims(patch, axis=-1)
                 subdivs[-1].append(patch)
 
@@ -111,28 +113,29 @@ def recreate_from_subdivs(subdivs, window_size, overlap_pct, padded_out_shape):
     """
     Merge tiled overlapping patches smoothly.
     """
-    step = int(window_size*(1-overlap_pct))
+    step = int(window_size * (1 - overlap_pct))
     padx_len = padded_out_shape[0]
     pady_len = padded_out_shape[1]
 
     y = np.zeros(padded_out_shape)
 
     a = 0
-    for i in range(0, padx_len-window_size+1, step):
+    for i in range(0, padx_len - window_size + 1, step):
         b = 0
-        for j in range(0, pady_len-window_size+1, step):
+        for j in range(0, pady_len - window_size + 1, step):
             windowed_patch = subdivs[a, b]
-            y[i:i+window_size, j:j+window_size] = y[i:i+window_size,
-                                                    j:j+window_size] + windowed_patch[:, :, 0]
+            y[i:i + window_size, j:j +
+              window_size] = y[i:i + window_size, j:j +
+                               window_size] + windowed_patch[:, :, 0]
             b += 1
         a += 1
 
-    for i in range(step, padx_len-window_size+1, step):
-        y[i:int(i+window_size*overlap_pct),
-          :] = y[i:int(i+window_size*overlap_pct), :]/2
+    for i in range(step, padx_len - window_size + 1, step):
+        y[i:int(i + window_size * overlap_pct
+                ), :] = y[i:int(i + window_size * overlap_pct), :] / 2
 
-    for j in range(step, pady_len-window_size+1, step):
-        y[:, j:int(j+window_size*overlap_pct)] = y[:,
-                                                   j:int(j+window_size*overlap_pct)]/2
+    for j in range(step, pady_len - window_size + 1, step):
+        y[:, j:int(j + window_size * overlap_pct
+                   )] = y[:, j:int(j + window_size * overlap_pct)] / 2
 
     return y
