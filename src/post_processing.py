@@ -1,52 +1,48 @@
-import fnmatch
-import cv2
 import os
-from utils import lineMagnitude, find_major_orientations, merge_lines, remove_isolated_lines
+import cv2
+import fnmatch
+import params
 import numpy as np
-import sys
-sys.path.insert(0, 'C:\\Users\\BARC\\Desktop\\AFP\\binary_seg')
+from utils.extract_lines import lineMagnitude, find_major_orientations, merge_lines, remove_isolated_lines
 
-
-h, w = (728, 968)
-img_h, img_w = (256, 256)
-
-pad_h = (h//img_h+1)*img_h
-pad_w = (w//img_w+1)*img_w
-
-aug_h = (pad_h-h)/2
-aug_w = (pad_w-w)/2
+# %% Compute a list of boundary ranges (boundary position +/- tolerance) of sub-images
 
 tol = 7  # tolerance
 cancat_range_x = []
 cancat_range_y = []
-for i in range(img_w, pad_w, img_w):
-    subimg_bd_x = int(i-aug_w)
-    range_x = range(subimg_bd_x-tol, subimg_bd_x+tol)
+for i in range(params.img_w, params.pad_w, params.img_w):
+    # compute boundary position in x-axis
+    subimg_bd_x = int(i - params.aug_w)
+    # compute boundary range in x-axis
+    range_x = range(subimg_bd_x - tol, subimg_bd_x + tol)
     cancat_range_x += list(range_x)
 
-for j in range(img_h, pad_h, img_h):
-    subimg_bd_y = int(j-aug_h)
-    range_y = range(subimg_bd_y-tol, subimg_bd_y+tol)
+for j in range(params.img_h, params.pad_h, params.img_h):
+    # compute boundary position in y-axis
+    subimg_bd_y = int(j - params.aug_h)
+    # compute boundary range in y-axis
+    range_y = range(subimg_bd_y - tol, subimg_bd_y + tol)
     cancat_range_y += list(range_y)
 
-subfolder = 'unet_xception_resnet_nsgd32_lovasz/'
-test_imgs = fnmatch.filter(os.listdir('./test/src/'), '*.jpg')
+# %% Find class boundary
 
-for filename in test_imgs:
-    src = cv2.imread('./test/src/' + filename)
-    pred = cv2.imread('./test/results/' + subfolder +
-                      os.path.splitext(filename)[0]+'.png', 0)
+test_dir = '../data/test/'
+test_file_list = fnmatch.filter(os.listdir(test_dir + 'src/'), '*.jpg')
+
+for file in test_file_list:
+    src = cv2.imread(test_dir + 'src/' + file)
+    pred = cv2.imread(
+        test_dir + 'predict/' + os.path.splitext(file)[0] + '.png', 0)
     lsd = cv2.createLineSegmentDetector(0)
-    # Detect lines in the image
-    # Position 0 of the returned tuple are the detected lines
+    # detect lines (position 0 of the returned tuple) in the image
     lines = lsd.detect(pred)[0]
     filter_lines = []
     for l in lines:
         x1, y1, x2, y2 = l.flatten()
-        # discard the line segments at the boundary of sub-images
-        if abs(x2-x1) < tol and int((x1+x2)/2) in cancat_range_x:
+        # discard the line segments falling in the boundary ranges of sub-images
+        if abs(x2 - x1) < tol and int((x1 + x2) / 2) in cancat_range_x:
             continue
-        if abs(y2-y1) < tol and int((y1+y2)/2) in cancat_range_y:
+        if abs(y2 - y1) < tol and int((y1 + y2) / 2) in cancat_range_y:
             continue
         if lineMagnitude(l.flatten()) > 20:
             # let the range of line oritations be [-90,90]
@@ -63,5 +59,5 @@ for filename in test_imgs:
     for fl in filter_lines:
         x1, y1, x2, y2 = np.rint(fl).astype(int)
         cv2.line(src, (x1, y1), (x2, y2), (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.imwrite('./test/line_extraction/' +
-                os.path.splitext(filename)[0]+'_fo_ml_rm.png', src)
+    cv2.imwrite(test_dir + 'results/' + os.path.splitext(file)[0] + '.png',
+                src)
