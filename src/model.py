@@ -1,9 +1,7 @@
 import params
-from keras import backend as K
 from keras.applications.xception import Xception
 from keras.layers import concatenate, Conv2D, Conv2DTranspose, MaxPooling2D, BatchNormalization, Dropout, Activation, Add, LeakyReLU, ZeroPadding2D
 from keras.models import Model
-K.set_image_data_format('channels_last')
 
 
 def convolution_block(x,
