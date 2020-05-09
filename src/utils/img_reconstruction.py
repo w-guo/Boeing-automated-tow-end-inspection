@@ -3,6 +3,9 @@ import gc
 import numpy as np
 from pre_processing import pre_process
 
+# https://github.com/Vooban/Smoothly-Blend-Image-Patches/blob/master/smooth_tiled_predictions.py
+# Modifications are made on the function "_windowed_subdivs" from the original code
+
 
 def rotate_mirror_do(im):
     """
