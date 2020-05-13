@@ -1,9 +1,9 @@
 import os
 import cv2
 import fnmatch
-import params
 import numpy as np
 import matplotlib.pyplot as plt
+import params as prm
 from sklearn.model_selection import train_test_split
 from model import build_model
 from utils.snapshot_callback import SnapshotCallbackBuilder
@@ -45,6 +45,7 @@ def generateData(batch_size, data=[]):
 
 
 np.random.seed(2018)
+
 # %% Split training and validation sets
 
 train_dir = '../data/train/'
@@ -54,7 +55,7 @@ for i in range(len(train_file_list)):
     idx = train_file_list[i]
     label = np.array(
         load_img(train_dir + 'label/' + idx, color_mode='grayscale')) / 255
-    coverage = np.sum(label) / (params.img_w * params.img_h)
+    coverage = np.sum(label) / (prm.img_w * prm.img_h)
     cov_class[i] = cov_to_class(coverage)
 train_set, val_set = train_test_split(train_file_list,
                                       test_size=0.2,
@@ -63,6 +64,7 @@ train_set, val_set = train_test_split(train_file_list,
 
 train_numb = len(train_set)
 val_numb = len(val_set)
+
 # %% 1st stage training
 
 # training parameters

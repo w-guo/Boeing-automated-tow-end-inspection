@@ -3,8 +3,8 @@ import cv2
 import fnmatch
 import math
 import random
-import params
 import numpy as np
+import params as prm
 from shutil import copy2
 from sklearn.model_selection import train_test_split
 from utils.img_augment import chooseRotate
@@ -45,18 +45,17 @@ for file in train_set:
     while count < image_each:
         temp = np.random.random()
         # crop (no scale)
-        begin_w = random.randint(0, params.w - params.img_w - 1)
-        begin_h = random.randint(0, params.h - params.img_h - 1)
-        src_sub = src[begin_h:begin_h + params.img_h, begin_w:begin_w +
-                      params.img_w]
-        label_sub = label[begin_h:begin_h + params.img_h, begin_w:begin_w +
-                          params.img_w]
+        begin_w = random.randint(0, prm.w - prm.img_w - 1)
+        begin_h = random.randint(0, prm.h - prm.img_h - 1)
+        src_sub = src[begin_h:begin_h + prm.img_h, begin_w:begin_w + prm.img_w]
+        label_sub = label[begin_h:begin_h + prm.img_h, begin_w:begin_w +
+                          prm.img_w]
         # rotate/flip
         src_sub, label_sub = chooseRotate(src_sub, label_sub, temp)
         cv2.imwrite((data_dir + 'train/src/' + os.path.splitext(file)[0] +
                      '_%d.jpg' % count), src_sub)
         # relabel the sub-images with full pixels labeled as class 1 to class 0
-        if np.sum(np.rint(label_sub / 255)) == params.img_w * params.img_h:
+        if np.sum(np.rint(label_sub / 255)) == prm.img_w * prm.img_h:
             label_sub = np.zeros_like(label_sub)
         cv2.imwrite((data_dir + 'train/label/' + os.path.splitext(file)[0] +
                      '_%d.jpg' % count), label_sub)
@@ -75,8 +74,8 @@ mean = rs.mean()
 variance = rs.variance()
 train_mean = np.mean(mean)
 train_std = math.sqrt(
-    np.sum(variance + np.multiply(mean, mean)) /
-    (params.img_h * params.img_w) - train_mean**2)
+    np.sum(variance + np.multiply(mean, mean)) / (prm.img_h * prm.img_w) -
+    train_mean**2)
 
 np.save('./train_mean_std', np.array([train_mean, train_std]))
 

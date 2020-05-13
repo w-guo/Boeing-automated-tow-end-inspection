@@ -1,4 +1,4 @@
-import params
+import params as prm
 from keras.applications.xception import Xception
 from keras.layers import concatenate, Conv2D, Conv2DTranspose, MaxPooling2D, BatchNormalization, Dropout, Activation, Add, LeakyReLU, ZeroPadding2D
 from keras.models import Model
@@ -29,7 +29,7 @@ def residual_block(blockInput, num_filters=16):
 
 def build_model(start_neurons):
 
-    backbone = Xception(input_shape=(params.img_h, params.img_w, 3),
+    backbone = Xception(input_shape=(prm.img_h, prm.img_w, 3),
                         weights='imagenet',
                         include_top=False)
     input = backbone.input

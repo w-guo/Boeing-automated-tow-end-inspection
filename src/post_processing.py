@@ -1,8 +1,8 @@
 import os
 import cv2
 import fnmatch
-import params
 import numpy as np
+import params as prm
 from utils.extract_lines import lineMagnitude, find_major_orientations, merge_lines, remove_isolated_lines
 
 # %% Compute a list of boundary ranges (boundary position +/- tolerance) of sub-images
@@ -10,16 +10,16 @@ from utils.extract_lines import lineMagnitude, find_major_orientations, merge_li
 tol = 7  # tolerance
 cancat_range_x = []
 cancat_range_y = []
-for i in range(params.img_w, params.pad_w, params.img_w):
+for i in range(prm.img_w, prm.pad_w, prm.img_w):
     # compute boundary position in x-axis
-    subimg_bd_x = int(i - params.aug_w)
+    subimg_bd_x = int(i - prm.aug_w)
     # compute boundary range in x-axis
     range_x = range(subimg_bd_x - tol, subimg_bd_x + tol)
     cancat_range_x += list(range_x)
 
-for j in range(params.img_h, params.pad_h, params.img_h):
+for j in range(prm.img_h, prm.pad_h, prm.img_h):
     # compute boundary position in y-axis
-    subimg_bd_y = int(j - params.aug_h)
+    subimg_bd_y = int(j - prm.aug_h)
     # compute boundary range in y-axis
     range_y = range(subimg_bd_y - tol, subimg_bd_y + tol)
     cancat_range_y += list(range_y)

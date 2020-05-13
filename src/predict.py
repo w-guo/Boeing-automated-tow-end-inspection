@@ -1,8 +1,8 @@
 import os
 import cv2
 import fnmatch
-import params
 import numpy as np
+import params as prm
 from keras.models import load_model
 from utils.losses import lovasz_loss, iou_lovasz
 from utils.img_reconstruction import rotate_mirror_do, rotate_mirror_undo, windowed_subdivs, recreate_from_subdivs
@@ -23,16 +23,16 @@ test_dir = '../data/test/'
 test_file_list = fnmatch.filter(os.listdir(test_dir + 'src/'), '*.jpg')
 for file in test_file_list:
     img = cv2.imread(test_dir + 'src/' + file, 0)
-    pad = np.pad(img, pad_width=params.borders, mode='reflect')
+    pad = np.pad(img, pad_width=prm.borders, mode='reflect')
     pads = rotate_mirror_do(pad)
     res = []
     for pad in tqdm(pads):
         # for every rotation:
         sd = windowed_subdivs(model, 3, train_mean, train_std, pad,
-                              params.window_size, params.overlap_pct)
+                              prm.window_size, prm.overlap_pct)
         one_padded_result = recreate_from_subdivs(sd,
-                                                  params.window_size,
-                                                  params.overlap_pct,
+                                                  prm.window_size,
+                                                  prm.overlap_pct,
                                                   padded_out_shape=list(
                                                       pad.shape))
         res.append(one_padded_result)
@@ -40,7 +40,6 @@ for file in test_file_list:
     padded_results = rotate_mirror_undo(res)
     # convert the output of a model with lovasz loss as the metric to probability
     prob = np.exp(padded_results) / (1 + np.exp(padded_results))
-    prd = prob[params.aug_h:params.aug_h +
-               params.h, params.aug_w:params.aug_w + params.w]
+    prd = prob[prm.aug_h:prm.aug_h + prm.h, prm.aug_w:prm.aug_w + prm.w]
     cv2.imwrite(test_dir + 'predict/' + os.path.splitext(file)[0] + '.png',
                 np.rint(prd * 255))
